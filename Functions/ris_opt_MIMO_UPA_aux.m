@@ -39,8 +39,9 @@ rx_arr(1,:) = rx_v_x + r0_RX(1);
 rx_arr(2,:) = r0_TX(2);
 rx_arr(3,:) = rx_v_z + r0_RX(3);
 
-[~,H1,H2] = chan_mat_RIS_UPA(tx_arr, rx_arr, ris_arr,1e6,1e6,1e6,f, 1);
+[~,H1,H2] = chan_mat_RIS_UPA(tx_arr, rx_arr, ris_arr,f);
 Hdir1 = zeros(Nt,Nr);
+
 %% Non diagonal
 
 [U1,S1,V1] = svd(H1);
@@ -57,12 +58,13 @@ rate_ND_num = real(log2(det(eye(Nr)+H_comp*Q_ND*H_comp'/P_noise)));
 
 
 %% Analytical computation
-Delta_x_T = d_e*(Nt_x - 1)/2;
-Delta_z_T = d_e*(Nt_z - 1)/2;
-Delta_x_R = d_e*(Nr_x - 1)/2;
-Delta_z_R = d_e*(Nr_z - 1)/2;
-Delta_y_ris = d_e*(Nris_y - 1)/2;
-Delta_z_ris = d_e*(Nris_z - 1)/2;
+
+Delta_x_T = d_e*Nt_x/2;
+Delta_z_T = d_e*Nt_z/2;
+Delta_x_R = d_e*Nr_x/2;
+Delta_z_R = d_e*Nr_z/2;
+Delta_y_ris = d_e*Nris_y/2;
+Delta_z_ris = d_e*Nris_z/2;
 d_1 = norm(r0_RIS-r0_TX);
 d_2 = norm(r0_RIS-r0_RX);
 
@@ -99,11 +101,11 @@ ris_z_vec = unique(ris_v_z).'/Delta_z_ris;
 % pswfs_ris_in = compute_analytical_pattern(c_tx_x, c_tx_y, x,y);
 % pswfs_ris_out = compute_analytical_pattern(c_rx_x, c_rx_y, x,y);
 % [pswfs_rx,~] = compute_analytical_pattern(c_r_e_x, c_r_e_z,...
-%     rx_x_vec,rx_z_vec, k_0,N_DoF_2+25);
+%     rx_x_vec,rx_z_vec, k_0,N_DoF_2+50);
 
 % Focusing function
-F_RIS_TX = compute_focusing_function(ris_arr, r0_TX, k_0);
-F_RIS_RX = compute_focusing_function(ris_arr, r0_RX, k_0);
+F_RIS_TX = conj(compute_focusing_function(ris_arr, r0_TX, k_0));
+F_RIS_RX = conj(compute_focusing_function(ris_arr, r0_RX, k_0));
 F_TX_RIS = compute_focusing_function(tx_arr, r0_RIS, k_0);
 % F_RX_RIS = compute_focusing_function(rx_arr, r0_RIS, k_0);
 

@@ -4,12 +4,12 @@ addpath(genpath('Prol_1D-master/'))
 clear
 clc
 
-Nt_y = 30;
-Nt_z = 30;
-Nr_y = 30;
-Nr_z = 30;
-Nris_x = 30;
-Nris_y = 30;
+Nt_y = 65;
+Nt_z = 65;
+Nr_y = 65;
+Nr_z = 65;
+Nris_x = 65;
+Nris_y = 65;
 
 N_0_dBm = -160;
 BW = 20e6;
@@ -21,10 +21,10 @@ Pt = 10^((-20 - 30)/10);
 f = 3.5e9;
 lambda = 3e8/f;
 
-d_ris = 10;
-D_dist = 20;
-lt = 10;
-lr = 10;
+d_ris = 256/sqrt(2)*lambda;
+D_dist = 512/sqrt(2)*lambda;
+lt = 256/sqrt(2)*lambda;
+lr = 256/sqrt(2)*lambda;
 
 n_iter = 200;
 

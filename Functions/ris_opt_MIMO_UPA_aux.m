@@ -120,8 +120,8 @@ g_1 = g_1_cont/(lambda/2)^4;
 g_2 = g_2_cont/(lambda/2)^4;
 
 S_approx = zeros(size(V_H,2),1);
-% S_approx(1:length(g_2)) = g_1.*g_2;
-S_approx(1:size(V_H,2)) = g_1(1:size(V_H,2)).*g_2(1:size(V_H,2));
+S_approx(1:length(g_2)) = g_1.*g_2;
+% S_approx(1:size(V_H,2)) = g_1(1:size(V_H,2)).*g_2(1:size(V_H,2));
 
 %% Non diagonal analytical configuration
 % Ris configuration

@@ -22,7 +22,7 @@ eigenval_prod = combinations(1,:).*combinations(2,:);
 y_ind = ceil(ind/computed_modes_axis);
 x_ind = mod(ind-1, computed_modes_axis)+1;
 
-pswf = zeros(length(x)*length(y),N_patterns);
+pswf = zeros(length(x)*length(y));
 for k = 1 : N_patterns
     prolate_2d = phi_n_y(:,y_ind(k))*phi_n_x(:,x_ind(k))';
     norm_2_prol = sqrt(sum(abs(prolate_2d(:)).^2));

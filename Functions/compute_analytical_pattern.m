@@ -8,8 +8,8 @@ minEigenvalRatio = 10^-40;
 [prolate_dat_y, iserr] = prolate_1d_crea(c_y,matdim, minEigenvalRatio);
 
 prolate_ids = [0:10]; % Index of desired prolates
-[phi_n_x,dv_x] = prolate_1d_ev(prolate_dat_x, prolate_ids, x);
-[phi_n_y,dv_y] = prolate_1d_ev(prolate_dat_y, prolate_ids, y);
+[phi_n_x,dv_x] = prolate_1d_ev(prolate_dat_x, [0:prolate_dat_x.num_prols-1], x);
+[phi_n_y,dv_y] = prolate_1d_ev(prolate_dat_y, [0:prolate_dat_y.num_prols-1], y);
 mu_n_x = abs(prolate_dat_x.nu.').^2;
 mu_n_y = abs(prolate_dat_y.nu.').^2;
 

@@ -1,4 +1,5 @@
-function [rate_ND_num, rate_ND_PSWF, rate_FOC_num, rate_FOC_PSWF] =...
+function [rate_ND_NUM_WA, rate_ND_PSWF_WA, rate_FOC_NUM_WA, rate_FOC_PSWF_WA,...
+    rate_ND_NUM_EQ, rate_ND_PSWF_EQ, rate_FOC_NUM_EQ, rate_FOC_PSWF_EQ] =...
     ris_opt_MIMO_UPA_aux(Nt_x,Nt_z,Nr_x,Nr_z,Nris_y,Nris_z,Pt,P_noise,f,r0_TX, r0_RX,r0_RIS)
 
 lambda = 3e8/f;     % wavelength
@@ -40,20 +41,6 @@ rx_arr(3,:) = rx_v_z + r0_RX(3);
 [~,H1,H2] = chan_mat_RIS_UPA(tx_arr, rx_arr, ris_arr,f);
 Hdir1 = zeros(Nt,Nr);
 
-%% Non diagonal
-
-[U1,S1,V1] = svd(H1);
-[U2,S2,V2] = svd(H2);
-
-RIS_Phi_ND = V2*U1';
-H_comp = H2*RIS_Phi_ND*H1;
-
-eigenval = diag(S1).^2.*diag(S2).^2;
-% Watefilling
-D_ND = water_fill(Pt, eigenval/P_noise);
-Q_ND = V1*diag(D_ND)*V1';
-rate_ND_num = real(log2(det(eye(Nr)+H_comp*Q_ND*H_comp'/P_noise)));
-
 
 %% Analytical computation
 
@@ -71,7 +58,7 @@ factor_r_e = abs(r0_RX(1))*abs(r0_RX(2))/d_2^2;
 
 N_DoF_1 =  ceil((2*Delta_x_T)*(2*Delta_z_T)*(2*Delta_y_ris)*(2*Delta_z_ris)/(lambda^2*d_1^2)*factor_t_e);
 N_DoF_2 =  ceil((2*Delta_x_R)*(2*Delta_z_R)*(2*Delta_y_ris)*(2*Delta_z_ris)/(lambda^2*d_2^2)*factor_r_e);
-
+N_DoF = min(N_DoF_1,N_DoF_2);
 
 c_t_e_x = k_0*Delta_x_T*Delta_y_ris/d_1*factor_t_e;
 c_t_e_z = k_0*Delta_z_T*Delta_z_ris/d_1;
@@ -122,60 +109,66 @@ max_N_eigenval = min([length(g_1),length(g_2), size(V_H,2)]);
 S_approx(1:max_N_eigenval) = g_1(1:max_N_eigenval).*g_2(1:max_N_eigenval);
 % S_approx(1:size(V_H,2)) = g_1(1:size(V_H,2)).*g_2(1:size(V_H,2));
 
+
+%% Non diagonal
+
+[U1,S1,V1] = svd(H1);
+[U2,S2,V2] = svd(H2);
+
+Phi_ND_NUM = V2*U1';
+H_comp = H2*Phi_ND_NUM*H1;
+
+eigenval = diag(S1).^2.*diag(S2).^2;
+
+% Watefilling
+D_ND_NUM_WA = water_fill(Pt, eigenval/P_noise);
+Q_ND_NUM_WA = V1*diag(D_ND_NUM_WA)*V1';
+rate_ND_NUM_WA = real(log2(det(eye(Nr)+H_comp*Q_ND_NUM_WA*H_comp'/P_noise)));
+
+% Equipower
+D_ND_NUM_EQ = zeros(size(eigenval));
+D_ND_NUM_EQ(1:N_DoF) = Pt/N_DoF;
+Q_ND_NUM_EQ = V1*diag(D_ND_NUM_EQ)*V1';
+rate_ND_NUM_EQ = real(log2(det(eye(Nr)+H_comp*Q_ND_NUM_EQ*H_comp'/P_noise)));
+
+
 %% Non diagonal analytical configuration
 % Ris configuration
-RIS_Phi_analytic = V_G*U_H';
-H_comp = H2*RIS_Phi_analytic*H1;
+Phi_ND_PSWF = V_G*U_H';
+H_comp = H2*Phi_ND_PSWF*H1;
 
 
 % Watefilling
-D_approx = water_fill(Pt, S_approx/P_noise);
-Q_approx = V_H*diag(D_approx)*V_H';
+D_PSWF_WA = water_fill(Pt, S_approx/P_noise);
+Q_PSWF_WA = V_H*diag(D_PSWF_WA)*V_H';
 
-rate_ND_PSWF = real(log2(det(eye(Nr)+H_comp*Q_approx*H_comp'/P_noise)));
+rate_ND_PSWF_WA = real(log2(det(eye(Nr)+H_comp*Q_PSWF_WA*H_comp'/P_noise)));
 
-%% Test PHI analytical RIS
+% Equipower
+D_PSWF_EQ = zeros(length(S_approx),1);
+D_PSWF_EQ(1:N_DoF) = Pt/N_DoF;
+Q_PSWF_EQ = V_H*diag(D_PSWF_EQ)*V_H';
+rate_ND_PSWF_EQ = real(log2(det(eye(Nr)+H_comp*Q_PSWF_EQ*H_comp'/P_noise)));
 
-% Ris configuration
-RIS_Phi_analytic = V_G*U_H';
-H_comp = H2*RIS_Phi_analytic*H1;
+%% Focusing configurations
+
+Phi_FOC_NUM = diag(F_RIS_RX)*diag(F_RIS_TX)';
+H_comp = H2*Phi_FOC_NUM*H1;
 
 [U,S,V] = svd(H_comp);
 
 % Watefilling
-D = water_fill(Pt, diag(S).^2/P_noise);
-Q_test = V*diag(D)*V';
+D_FOC_NUM_WA = water_fill(Pt, diag(S).^2/P_noise);
+Q_FOC_NUM_WA = V*diag(D_FOC_NUM_WA)*V';
+rate_FOC_NUM_WA = real(log2(det(eye(Nr) + H_comp*Q_FOC_NUM_WA*H_comp'/P_noise)));
+rate_FOC_PSWF_WA = real(log2(det(eye(Nr) + H_comp*Q_PSWF_WA*H_comp'/P_noise)));
 
-rate_test_PHI= real(log2(det(eye(Nr)+H_comp*Q_test*H_comp'/P_noise)));
-
-%% Test eigenvalues RIS
-% Ris configuration
-RIS_Phi_analytic = V_G*U_H';
-H_comp = H2*RIS_Phi_analytic*H1;
-
-[U,S,V] = svd(H_comp);
-
-% Watefilling
-D_test = water_fill(Pt, S_approx/P_noise);
-Q_test = V*diag(D_test)*V';
-
-rate_test_eigenval= real(log2(det(eye(Nr)+H_comp*Q_test*H_comp'/P_noise)));
-
-
-%% Focusing configuration
-
-F_RIS_TX = compute_focusing_function(ris_arr, r0_TX, k_0);
-F_RIS_RX = conj(compute_focusing_function(ris_arr, r0_RX, k_0));
-RIS_Phi_FOC = diag(F_RIS_RX)*diag(F_RIS_TX)';
-H_comp = H2*RIS_Phi_FOC*H1;
-
-[U,S,V] = svd(H_comp);
-
-% Watefilling
-D = water_fill(Pt, diag(S).^2/P_noise);
-Q = V*diag(D)*V';
-rate_FOC_num = real(log2(det(eye(Nr) + H_comp*Q*H_comp'/P_noise)));
-rate_FOC_PSWF = real(log2(det(eye(Nr) + H_comp*Q_approx*H_comp'/P_noise)));
+% Equipower
+D_FOC_NUM_EQ = zeros(length(S),1);
+D_FOC_NUM_EQ(1:N_DoF) = Pt/N_DoF;
+Q_FOC_NUM_EQ = V*diag(D_FOC_NUM_EQ)*V';
+rate_FOC_NUM_EQ = real(log2(det(eye(Nr) + H_comp*Q_FOC_NUM_EQ*H_comp'/P_noise)));
+rate_FOC_PSWF_EQ = real(log2(det(eye(Nr) + H_comp*Q_PSWF_EQ*H_comp'/P_noise)));
 
 %% Opt configuration
 % Qinit = eye(Nt)*(Pt/Nt);

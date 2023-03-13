@@ -24,8 +24,8 @@ lambda = 3e8/f;
 r0_RIS = [0,0,0];
 r0_TX = [5,-5,0];
 
-x = [0.5:0.2:16];
-y = [-10.1:0.2:10.1];
+x = [0.01,0.25:0.25:16];
+y = [-10.1:0.25:10.1];
 
 [X,Y] = meshgrid(x,y);
 X_vec = X(:);
@@ -41,8 +41,10 @@ output_ND_num_EQ = zeros(size(X_vec));
 output_FOC_num_EQ = zeros(size(X_vec));
 output_ND_PSWF_EQ = zeros(size(X_vec));
 output_FOC_PSWF_EQ = zeros(size(X_vec));
+output_rnd = zeros(size(X_vec));
+output_fix = zeros(size(X_vec));
 
-for indexN = 1:length(X_vec)
+parfor indexN = 1:length(X_vec)
     %     d_RX_n = (D_dist( indexN ) );
     %
     %     d_ris = d_RX_n/2;
@@ -51,7 +53,8 @@ for indexN = 1:length(X_vec)
     r0_RX = [X_vec(indexN),Y_vec(indexN),0];
 
     [rate_ND_NUM_WA, rate_ND_PSWF_WA, rate_FOC_NUM_WA, rate_FOC_PSWF_WA,...
-        rate_ND_NUM_EQ, rate_ND_PSWF_EQ, rate_FOC_NUM_EQ, rate_FOC_PSWF_EQ] = ...
+        rate_ND_NUM_EQ, rate_ND_PSWF_EQ, rate_FOC_NUM_EQ, rate_FOC_PSWF_EQ,...
+        rate_rnd, rate_fix] = ...
         ris_opt_MIMO_UPA_aux(Nt_y,Nt_z,Nr_y,Nr_z,Nris_x,Nris_y,Pt,P_noise,f,r0_TX, r0_RX,r0_RIS);
 
     output_ND_num_WA(indexN) = rate_ND_NUM_WA;
@@ -62,13 +65,18 @@ for indexN = 1:length(X_vec)
     output_ND_PSWF_EQ(indexN) = rate_ND_PSWF_EQ;
     output_FOC_num_EQ(indexN) = rate_FOC_NUM_EQ;
     output_FOC_PSWF_EQ(indexN) = rate_FOC_PSWF_EQ;
+    output_rnd(indexN) = rate_rnd;
+    output_fix(indexN) = rate_fix;
 
+    if mod(indexN, 100) == 0
+        fprintf('%i|\n', indexN);
 
+    end
 
 end
 %%
 filename = [ 'Results\Map_RIS_MIMO_Nty' num2str(Nt_y) 'Ntz' num2str(Nt_z) 'Nry' num2str(Nr_y) 'Nrz' num2str(Nr_z)...
-    'Nrisx' num2str(Nris_x)  '_drx.mat'];
+    'Nrisx' num2str(Nris_x)  '_perpendicular_fine_v2.mat'];
 save( filename )
 %%
 close all

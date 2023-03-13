@@ -1,5 +1,6 @@
 function [rate_ND_NUM_WA, rate_ND_PSWF_WA, rate_FOC_NUM_WA, rate_FOC_PSWF_WA,...
-    rate_ND_NUM_EQ, rate_ND_PSWF_EQ, rate_FOC_NUM_EQ, rate_FOC_PSWF_EQ] =...
+    rate_ND_NUM_EQ, rate_ND_PSWF_EQ, rate_FOC_NUM_EQ, rate_FOC_PSWF_EQ,...
+    rate_rnd, rate_fix] =...
     ris_opt_MIMO_UPA_aux(Nt_x,Nt_z,Nr_x,Nr_z,Nris_y,Nris_z,Pt,P_noise,f,r0_TX, r0_RX,r0_RIS)
 
 lambda = 3e8/f;     % wavelength
@@ -77,12 +78,12 @@ ris_z_vec = unique(ris_v_z).'/Delta_z_ris;
 
 % Patterns
 [P_TX_RIS, eigenval_ord_1] = compute_analytical_pattern(c_t_e_x, c_t_e_z,...
-    tx_x_vec,tx_z_vec, k_0,50);
+    tx_x_vec,tx_z_vec, k_0,10);
 
 [P_RIS_TX, ~] = compute_analytical_pattern(c_t_e_x, c_t_e_z,...
-    ris_y_vec,ris_z_vec, k_0,50);
+    ris_y_vec,ris_z_vec, k_0,10);
 [P_RIS_RX, eigenval_ord_2] = compute_analytical_pattern(c_r_e_x, c_r_e_z,...
-    ris_y_vec,ris_z_vec, k_0,50);
+    ris_y_vec,ris_z_vec, k_0,10);
 % pswfs_ris_in = compute_analytical_pattern(c_tx_x, c_tx_y, x,y);
 % pswfs_ris_out = compute_analytical_pattern(c_rx_x, c_rx_y, x,y);
 % [pswfs_rx,~] = compute_analytical_pattern(c_r_e_x, c_r_e_z,...
@@ -170,6 +171,28 @@ Q_FOC_NUM_EQ = V*diag(D_FOC_NUM_EQ)*V';
 rate_FOC_NUM_EQ = real(log2(det(eye(Nr) + H_comp*Q_FOC_NUM_EQ*H_comp'/P_noise)));
 rate_FOC_PSWF_EQ = real(log2(det(eye(Nr) + H_comp*Q_PSWF_EQ*H_comp'/P_noise)));
 
+%% Random
+Phi_rnd = diag(exp(1j*unifrnd(0,2*pi, Nris,1)));
+H_comp = H2*Phi_rnd*H1;
+
+[U,S,V] = svd(H_comp);
+
+% Watefilling
+D_rnd = water_fill(Pt, diag(S).^2/P_noise);
+Q_rnd = V*diag(D_rnd)*V';
+rate_rnd = real(log2(det(eye(Nr) + H_comp*Q_rnd*H_comp'/P_noise)));
+
+%% Fix
+Phi_fix = -diag(ones(Nris, 1));
+H_comp = H2*Phi_fix*H1;
+
+[U,S,V] = svd(H_comp);
+
+% Watefilling
+D_fix = water_fill(Pt, diag(S).^2/P_noise);
+Q_fix = V*diag(D_fix)*V';
+rate_fix = real(log2(det(eye(Nr) + H_comp*Q_fix*H_comp'/P_noise)));
+
 %% Opt configuration
 % Qinit = eye(Nt)*(Pt/Nt);
 % omega_init = ones(1,Nris);
@@ -181,48 +204,6 @@ rate_FOC_PSWF_EQ = real(log2(det(eye(Nr) + H_comp*Q_PSWF_EQ*H_comp'/P_noise)));
 % 
 % rate_D_OPT = dC6(end);
 
-%% Miller configuration
-% Delta_x_T = d_e*(Nt_x - 1)/2;
-% Delta_z_T = d_e*(Nt_z - 1)/2;
-% Delta_x_R = d_e*(Nr_x - 1)/2;
-% Delta_z_R = d_e*(Nr_z - 1)/2;
-% Delta_y_ris = d_e*(Nris_y - 1)/2;
-% Delta_z_ris = d_e*(Nris_z - 1)/2;
-% d_0 = norm(r0_RX-r0_TX);
-% 
-% c_y = k_0*Delta_x_T*Delta_x_R/d_0;
-% c_z = k_0*Delta_z_T*Delta_z_R/d_0;
-% 
-% tx_y_vec = unique(tx_arr(2,:)).'/Delta_x_T;
-% tx_z_vec = unique(tx_arr(3,:)).'/Delta_z_T;
-% 
-% rx_y_vec = unique(rx_arr(2,:)).'/Delta_x_R;
-% rx_z_vec = unique(rx_arr(3,:)).'/Delta_z_R;
-% % Patterns
-% [pswfs_tx, g_2_cont] = compute_analytical_pattern(c_y, c_z,...
-%     tx_y_vec,tx_z_vec, k_0);
-% % pswfs_ris_in = compute_analytical_pattern(c_tx_x, c_tx_y, x,y);
-% % pswfs_ris_out = compute_analytical_pattern(c_rx_x, c_rx_y, x,y);
-% % pswfs_rx = compute_analytical_pattern(c_tx_x, c_tx_y,...
-% %     rx_y_vec,rx_z_vec);
-% 
-% % Focusing function
-% F_Tx = compute_focusing_function(tx_arr, r0_RX, k_0);
-% F_Rx = compute_focusing_function(rx_arr, r0_TX, k_0);
-% 
-% input_pattern = F_Tx.*pswfs_tx;
-% g_2 = g_2_cont/(lambda/2)^4;
-% 
-% S_miller = zeros(size(input_pattern,1),1);
-% S_miller(1:length(g_2)) = g_2;
-% % Watefilling
-% D_miller = water_fill(Pt, S_miller/P_noise);
-% Q_miller = input_pattern*diag(D_miller)*input_pattern';
-% 
-% % Ris configuration
-% RIS_Phi_FOC = diag(conj(F_R1.*F_R2));
-% H_comp = H2*RIS_Phi_FOC*H1;
-% 
-% miller_rate = real(log2(det(eye(Nr)+H_comp*Q_miller*H_comp'/P_noise)));
+
 
 
